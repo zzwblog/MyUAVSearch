@@ -1,0 +1,334 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" href="./leaflet.css" />   
+<script src="./leaflet.js"></script>
+	<style>
+		html, body {
+			height: 100%;
+			margin: 0;
+		}
+		#map {
+			width: 100%;
+			height: 100%;
+		}
+	</style>
+
+</head>
+<body>
+<div id='map'></div>
+<input type="hidden" name="latinfo" id="lat" value="请选点"> 
+
+
+
+<script>
+
+// initialize the map on the "map" div with a given center and zoom
+
+var map =  L.map('map', {
+    center: [24.497,118.129],
+    zoom: 10,
+	minZoom: 11,
+	maxZoom: 16
+});
+
+L.tileLayer('./maps/{z}/{x}/{y}.png', //将标题和层级添加到地图之中
+{
+   attribution: 'Map data &copy'
+}).addTo(map);//map为上面设置的标签
+
+
+L.circle([24.2857, 118.0814], 500, {
+
+    color: 'red',
+
+    fillColor: '#f03',
+
+    fillOpacity: 10
+
+}).addTo(mymap).bindPopup("颐和园欢迎你");
+
+var myIcon = L.icon({
+    iconUrl: './images/ico.png',
+    iconSize: [20, 20],
+    iconAnchor: [0, 0],
+    popupAnchor: [-3, -76]
+});
+//基地
+var mymillitary=L.icon({
+	iconUrl: 'military_base.png',
+	iconSize:[32,32],
+	iconAnchor: [0, 0],
+	popupAnchor: [-3, -76]
+});
+//雷达
+var myradar=L.icon({
+	iconUrl: 'radar.png',
+	iconSize:[32,32],
+	iconAnchor: [0, 0],
+	popupAnchor: [-3, -76]
+});
+
+var cancel_markericon=L.icon({
+    iconUrl: '123',
+	iconSize:[0,0],
+	iconAnchor: [0, 0],
+	popupAnchor: [-3, -76]
+});
+
+// define rectangle geographical bounds
+//var bounds = [[24.540,118.090], [24.450,118.170]];
+// create an orange rectangle
+//L.rectangle(bounds, {color: "#ff7800", weight: 1}).addTo(map);
+
+// zoom the map to the rectangle bounds
+    //map.fitBounds(bounds);
+
+L.control.scale().addTo(map);//添加比例尺
+
+//处理点击的事件
+
+
+//var a=document.body.clientWidth;      //获取屏幕大小
+//var b=document.body.clientHeight;
+//var point_latlng=L.point(a-50,50);      //显示经纬度的文本
+//var c=a;
+//var point_container=[]   //显示屏幕像素点
+//point_container.push(point_latlng.x);
+//point_container.push(point_latlng.y);
+//point_container[1]=point_container[1]+50;
+//var cur_latlng=[];
+//var cur_latlng_container=[];
+//var pre_latlng=[];
+//var pre_latlng_container=[];
+//var layer_container=[];
+//var layer_latlng=[];
+//基地设置
+
+var base_map={};
+var base_number=1;
+var base_No=1;
+var base_lnglat=[];
+//区域选点
+var point_status=false;
+var point_lnglat=[];
+var point_layer=[];
+var polyline_point=[];
+var zoom;             //获取当前地图缩放级别
+var Currentlnglat;            ///获取当前视图中心
+
+//鼠标滑动事件
+map.on('mousemove', function(e) {
+//document.getElementById("lat").value=e.latlng;
+//L.marker(e.latlng).addTo(map);
+//demo();
+var point=map.latLngToContainerPoint(e.latlng).round();
+L.marker(e.latlng,{icon:cancel_markericon,title:'取消标记物'}).addTo(map).remove();
+mywork.mousemovedata(e.latlng.lng,e.latlng.lat,point.x,point.y);
+} );
+
+//鼠标点击事件
+map.on('click', function(e) {
+if(point_status==false)
+{
+	if(base_number==4)
+	{
+		alert("基地已满");
+	}
+	else
+	{	var length  = Object.keys(base_map).length
+		for(var key=1;key<=length;key++)
+		{	
+
+			if(base_map[key]==base_No)
+			{
+				base_No++;
+				key=0;
+				if(base_No==4)
+				{
+					alert("基地已满");
+					return;
+				}
+			}
+		}
+		var marker=L.marker(e.latlng,{icon:mymillitary,title:'基地'}).addTo(map);
+		marker.bindTooltip(""+base_No).openTooltip();
+		base_lnglat.push(e.latlng);
+		base_map[base_number]=base_No;
+		base_number++;
+		base_No++;
+	}
+}
+else
+{
+	var marker=L.marker(e.latlng).addTo(map);
+	point_lnglat.push(e.latlng);
+	point_layer.push(marker);
+	var containerXY=map.latLngToContainerPoint(e.latlng).round();
+	mywork.ShowMapPointLnglat(e.latlng.lng,e.latlng.lat,containerXY.x,containerXY.y);
+}
+});
+//鼠标双击事件
+map.on('dblclick', function(e) {
+//L.marker(e.latlng,{icon:myradar,title:'雷达'}).addTo(map);
+});
+map.on('contextmenu',function(e){
+	var a=1;
+});
+
+
+
+function demo()
+{
+var arr=[[24.542,118.1000],[24.542,118.1005],[24.542,118.1010],[24.542,118.1015]];
+dt(arr);
+}
+
+function sentbase()
+{
+	zoom=map.getZoom();
+	Currentlnglat=map.getCenter();	
+	for(var i=0;i<base_lnglat.length;i++)
+	{
+		
+		var lat=base_lnglat[i].lat;
+		var lng=base_lnglat[i].lng;
+		var point=map.latLngToContainerPoint(base_lnglat[i]).round();
+		var containerX=point.x;
+		var containerY=point.y;
+		var BASE=base_map[i+1];
+		mywork.GetBaseData(lng,lat,containerX,containerY,BASE);
+	}
+	for(var i=0;i<point_lnglat.length;i++)
+	{
+		
+		var lat=point_lnglat[i].lat;
+		var lng=point_lnglat[i].lng;
+		var point=map.latLngToContainerPoint(point_lnglat[i]).round();
+		var containerX=point.x;
+		var containerY=point.y;
+		mywork.GetPointData(lng,lat,containerX,containerY);
+	}
+}
+
+
+function OpenPointStatus()
+{
+	point_status=true;
+}
+
+
+function Deletepointlnglat(index)
+{
+	//alert("123");
+	point_layer[index].remove();
+	point_lnglat.splice(index,1);
+	point_layer.splice(index,1);
+}
+
+
+function ClosePointStatus()
+{
+	point_status=false;
+}
+
+function callfromqt(x,y)          //从qt接受数据
+{
+	var point = L.point(x,y);
+	var latlng = map.containerPointToLatLng(point);  // 获得 LngLat 对象3
+	calltoqt(latlng.lng,latlng.lat);
+}
+
+
+function calltoqt(a,b)      //回传数据给qt
+{
+	mywork.onCall(a,b);
+}
+
+
+function basefromqt(lng,lat,base)
+{
+	if(base_number==4)
+	{
+		alert("基地已满");
+	}
+	else
+	{
+		var point=[lat,lng];
+		for(var key in base_map)
+		{
+			if(base_map[key]==base)
+			{
+				alert("基地已存在,重新输入基地号");
+				return;
+			}
+		}
+		var marker=L.marker(point,{icon:mymillitary,title:'基地'}).addTo(map);
+		base_lnglat.push(point);
+		marker.bindTooltip(""+base).openTooltip();
+		base_map[base_number]=base;
+		base_number++;
+	}
+}
+
+
+var polylineNumper=[];
+function recoverView()
+{
+	
+	for(var i=0;i<polylineNumper.length;i++)
+	{
+		polylineNumper[i].remove();
+	}
+	polylineNumper=[];
+	map.setView(Currentlnglat,zoom);
+}
+
+
+function pictureGetLnglat(x,y)
+{
+	
+	var point = L.point(x,y);
+	
+	map.setView(Currentlnglat,zoom);
+	
+	var latlng = map.containerPointToLatLng(point);  // 获得 LngLat 对象3
+	mywork.mousemovedata(latlng.lng,latlng.lat,x,y);
+}
+
+
+function getpolyline(x,y)
+{
+	var point = L.point(x,y);
+	var latlng = map.containerPointToLatLng(point);  // 获得 LngLat 对象3
+	polyline_point.push(latlng);
+}
+
+
+function drawpolyline()
+{
+	var polyline = L.polyline(polyline_point, {color: 'red'}).addTo(map);
+	// zoom the map to the polyline
+	polylineNumper.push(polyline);
+	map.fitBounds(polyline.getBounds());
+	polyline_point=[];
+}
+
+
+function dt(arrpoints)
+{
+//关于如何构造程序定义的经纬度latlng类型，参见：https://leafletjs.com/reference-1.6.0.html#latlng
+//关于如何使用latlng在地图上添加marker（标记），参见：https://leafletjs.com/reference-1.6.0.html#marker
+for(var i=0;i<arrpoints.length;i++)
+{  
+var latlng = L.latLng(arrpoints[i][0],arrpoints[i][1]);	
+L.marker(latlng, {icon:myIcon, title:"路径点"}).addTo(map);
+}
+map.fitBounds(polyline.getBounds());
+};
+
+
+	</script>
+</body>
+</html>
